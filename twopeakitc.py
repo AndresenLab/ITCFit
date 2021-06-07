@@ -92,11 +92,12 @@ def fullFit(data, const, **kwargs):
 #data - pandas dataframe
 #result - lmfit.ModelResult
 def fitOut(data, result, verbose=True, dataPlot=True, bestPlot=True, firstPlot=False):
+    ydata = result.data
     if verbose == True:
         print(result.fit_report())
     
     if dataPlot == True:
-        plt.plot(data['Mole Ratio'][1:], data['Y: Area Data (µJ)'][1:], 'ko', label='Area Data')
+        plt.plot(data['Mole Ratio'][1:], ydata, 'ko', label='Area Data')
     
     if bestPlot == True:
         plt.plot(data['Mole Ratio'][1:], result.best_fit, 'b-', label='Best Fit')
@@ -108,5 +109,3 @@ def fitOut(data, result, verbose=True, dataPlot=True, bestPlot=True, firstPlot=F
         plt.xlabel('Mole Ratio')
         plt.ylabel('µJ / mol')
         plt.legend(loc='best')
-
-    
