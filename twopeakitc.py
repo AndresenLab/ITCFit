@@ -1,6 +1,7 @@
 import numpy as np
 import lmfit as lm
 import matplotlib.pyplot as plt
+import pandas as pd
 
 #data - Pandas dataframe imported from NanoAnalyze
 #const - dict of constants
@@ -109,3 +110,19 @@ def fitOut(data, result, verbose=True, dataPlot=True, bestPlot=True, firstPlot=F
         plt.xlabel('Mole Ratio')
         plt.ylabel('µJ / mol')
         plt.legend(loc='best')
+
+#result - lmfit.ModelResult
+#filename - file to save
+#sep - delimiter character
+def saveFit(result, filename, sep = ','):
+    data = result.data
+    bestOut = result.best_fit
+    firstOut = result.init_fit
+
+    arrayOut = np.array((data, bestOut, firstOut))
+    arrayOut = np.transpose(arrayOut)
+    arrayOut = pd.DataFrame(arrayOut, columns=('Data', 'Best Fit', 'First Fit'))
+
+    out = open(filename, 'w')
+    out.write(pd.DataFrame.to_csv(arrayOut, sep=sep))
+    out.close()
