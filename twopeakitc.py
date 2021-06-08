@@ -148,7 +148,5 @@ def saveFit(result, filename, sep = ','):
     arrayOut = pd.DataFrame(arrayOut, columns=('Data', 'Best Fit', 'First Fit'))
 
     out = open(filename, 'w')
-    out.write(result.fit_report() + '\n')
-    out.write('='*75 + '\n')
     out.write(pd.DataFrame.to_csv(arrayOut, sep=sep))
     out.close()
