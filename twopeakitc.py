@@ -6,7 +6,7 @@ import pandas as pd
 #data - Pandas dataframe imported from NanoAnalyze
 #const - dict of constants
 #**kwargs - values, mins, maxes
-def fullFit(data, const, nFits = 1, chiMax = np.inf, **kwargs):
+def fullFit(data, const, **kwargs):
     dV = const['dV']    #Injection Volume
     V0 = const['V0']    #Cell Volume
     c = const['c']  #Syringe Concentration
@@ -84,34 +84,10 @@ def fullFit(data, const, nFits = 1, chiMax = np.inf, **kwargs):
 
         return params
     
-    def iterativeFit(model, ydata, params, Xt, nFits, chiMax):
-        first_fit = model.fit(ydata, params, Xt=Xt)
-        best_fit = first_fit
-        prev_fit = first_fit
-        n = 1
-        while n < nFits:
-            new_fit = model.fit(ydata, prev_fit.params, Xt=Xt)
-            
-            if new_fit.redchi < best_fit.redchi:
-                best_fit = new_fit
-                print('New fit found')
-            
-            prev_fit = new_fit
-            n += 1
-            
-            print('Fit %i completed' %n)
-        
-        if best_fit.redchi > chiMax:
-            print('Fit Warning: Reduced Chi-Square not accepted')
-        
-        return first_fit, best_fit
-        
-    
     model = lm.Model(NDHTotal)
     params = toParams(**kwargs)
     
-    result = iterativeFit(model, ydata, params, Xt, nFits, chiMax)
-    
+    result = model.fit(ydata, params, Xt=Xt)
     return result
 
 #data - pandas dataframe
