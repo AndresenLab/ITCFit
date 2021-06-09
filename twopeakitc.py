@@ -6,20 +6,38 @@ import pandas as pd
 #data - Pandas dataframe imported from NanoAnalyze
 #const - dict of constants
 #**kwargs - values, mins, maxes
-def fullFit(data, const, **kwargs):
+def mergeFit(data1, data2, const, **kwargs):
     dV = const['dV']    #Injection Volume
     V0 = const['V0']    #Cell Volume
-    c = const['c']  #Syringe Concentration
-    mol = dV * c   #Moles per injection
-
-    Xt = data['Moles (Syringe)'] / V0     #Total ligand conc.
-    Mt = data['Moles (Cell)'] / V0        #Total macromolecule conc.
-
-    yvals = np.asarray(data['Y: Area Data (µJ)'])[1:] * 1e-6
-    ydata = yvals / mol
     
-    def NDH(Xt, N, K, dH):
+    c1 = np.full(len(data1['Moles (Syringe)']), const['c1'])
+    c2 = np.full(len(data2['Moles (Syringe)']), const['c2'])   #Syringe Concentration
+
+    Xt1 = data1['Moles (Syringe)'] / V0     #Total ligand conc.
+    Xt2 = data2['Moles (Syringe)'] / V0
+    
+    Mt1 = data1['Moles (Cell)'] / V0        #Total macromolecule conc.
+    Mt2 = data2['Moles (Cell)'] / V0
+
+    yvals1 = np.asarray(data1['Y: Area Data (µJ)']) * 1e-6
+    yvals2 = np.asarray(data2['Y: Area Data (µJ)']) * 1e-6
+    
+    ydata1 = yvals1 / (const['c1'] * dV)
+    ydata2 = yvals2 / (const['c2'] * dV)
+    
+    Xt = np.append(Xt1, Xt2)
+    Mt = np.append(Mt1, Mt2)
+    c = np.append(c1, c2)
+    ydata = np.append(ydata1, ydata2)
+    
+    fullData = pd.DataFrame({'Xt':Xt, 'Mt':Mt, 'c':c, 'ydata':ydata}).sort_values('Xt')
+    
+    
+    def NDH(ind, N, K, dH):
         #Q = N M_t dH V0 / 2 [1 + X_t / N M_t + 1 / K N M_t - sqrt((1 + X_t / N M_t + 1 / K N M_t)^2 - 4 X_t / N M_t)]
+        Xt = ind['Xt']
+        Mt = ind['Mt']
+        c = ind['c']
         term1 = (N * Mt * dH * V0) / 2
         term2 = Xt / (N * Mt)
         term3 = 1 / (K * N * Mt)
@@ -32,10 +50,10 @@ def fullFit(data, const, **kwargs):
         #note that we do not return the first point -- it is not valid (Q[-1] does not exist)
         return ndh[1:]
 
-    def NDHTotal(Xt, N1, K1, dH1, N2p, K2, dH2, N3):
-        NDH1 = NDH(Xt, N1, K1, dH1) #Fits the first peak
-        NDH3 = NDH(Xt, N3, K1, dH1)
-        NDH2p= NDH(Xt, N2p,K2, dH2)
+    def NDHTotal(ind, N1, K1, dH1, N2p, K2, dH2, N3):
+        NDH1 = NDH(ind, N1, K1, dH1) #Fits the first peak
+        NDH3 = NDH(ind, N3, K1, dH1)
+        NDH2p= NDH(ind, N2p,K2, dH2)
 
         curve3 = abs((dH1 - NDH3) / dH1) #curve defined by abs((dH1 - NDH3)/dH1)
 
@@ -87,7 +105,7 @@ def fullFit(data, const, **kwargs):
     model = lm.Model(NDHTotal)
     params = toParams(**kwargs)
     
-    result = model.fit(ydata, params, Xt=Xt)
+    result = model.fit((fullData['ydata'])[1:], params, ind=fullData)
     return result
 
 #data - pandas dataframe
